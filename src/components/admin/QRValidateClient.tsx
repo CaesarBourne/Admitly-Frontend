@@ -1,0 +1,165 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { ArrowLeft, CheckCircle2, Clock, Loader2, MapPin, ShieldCheck, Users, XCircle } from "lucide-react";
+import { toast } from "sonner";
+import { admitInviteeAction } from "@/lib/actions/invitees";
+import { clientEnv } from "@/lib/env-client";
+import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+
+type RingState = "pending" | "just_admitted" | "already_admitted";
+
+interface Props {
+  eventId: string;
+  inviteeId: string;
+  name: string;
+  avatarUrl: string | null;
+  admissionStatus: "pending" | "admitted";
+  admittedAt: string | null;
+  seatNumber: string | null;
+  seatGroupName: string | null;
+}
+
+export function QRValidateClient({
+  eventId,
+  inviteeId,
+  name,
+  avatarUrl,
+  admissionStatus,
+  admittedAt: initialAdmittedAt,
+  seatNumber,
+  seatGroupName,
+}: Props) {
+  const [ringState, setRingState] = useState<RingState>(
+    admissionStatus === "admitted" ? "already_admitted" : "pending",
+  );
+  const [admittedAt, setAdmittedAt] = useState(initialAdmittedAt);
+  const [admitting, setAdmitting] = useState(false);
+  const [imgFailed, setImgFailed] = useState(false);
+  const initials = (name || "?").slice(0, 2).toUpperCase();
+
+  async function handleAdmit() {
+    if (admitting) return;
+    setAdmitting(true);
+    const result = await admitInviteeAction(inviteeId);
+    if ("error" in result) {
+      toast.error(result.error);
+    } else {
+      setAdmittedAt(result.admittedAt);
+      setRingState("just_admitted");
+    }
+    setAdmitting(false);
+  }
+
+  return (
+    <div className="flex flex-col items-center gap-6">
+      <div className="relative">
+        <div
+          className={cn(
+            "flex h-28 w-28 items-center justify-center overflow-hidden rounded-full border-4 bg-muted",
+            ringState === "just_admitted" && "border-emerald-500",
+            ringState === "already_admitted" && "border-destructive",
+            ringState === "pending" && "border-border",
+          )}
+        >
+          {avatarUrl && !imgFailed ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={`${clientEnv.apiBaseUrl}${avatarUrl}`}
+              alt={name}
+              className="h-full w-full object-cover"
+              onError={() => setImgFailed(true)}
+            />
+          ) : (
+            <span className="text-2xl font-medium">{initials}</span>
+          )}
+        </div>
+        {ringState === "just_admitted" && (
+          <CheckCircle2 className="absolute -bottom-1 -right-1 h-8 w-8 rounded-full bg-background text-emerald-500" />
+        )}
+        {ringState === "already_admitted" && (
+          <XCircle className="absolute -bottom-1 -right-1 h-8 w-8 rounded-full bg-background text-destructive" />
+        )}
+      </div>
+
+      <div className="text-center">
+        <h2 className="text-2xl font-semibold">{name}</h2>
+        <Badge variant="secondary" className="mt-1">
+          Invitee
+        </Badge>
+        {(seatNumber || seatGroupName) && (
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+            {seatNumber && (
+              <p className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
+                <MapPin className="size-4" />
+                Seat {seatNumber}
+              </p>
+            )}
+            {seatGroupName && (
+              <p className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
+                <Users className="size-4" />
+                Seat group: <span className="font-bold">{seatGroupName}</span>
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+
+      {ringState === "pending" && (
+        <div className="flex items-center gap-3 rounded-lg border bg-muted/50 p-4 text-sm">
+          <Clock className="h-5 w-5 shrink-0 text-muted-foreground" />
+          <div>
+            <p className="font-medium">Valid invitee — not yet admitted</p>
+            <p className="text-muted-foreground">Scan confirmed. Tap below to admit to the event.</p>
+          </div>
+        </div>
+      )}
+
+      {ringState === "just_admitted" && (
+        <div className="flex items-center gap-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm">
+          <ShieldCheck className="h-5 w-5 shrink-0 text-emerald-500" />
+          <div>
+            <p className="font-medium">Welcome!</p>
+            <p className="text-muted-foreground">{name} has been admitted.</p>
+          </div>
+        </div>
+      )}
+
+      {ringState === "already_admitted" && (
+        <div className="flex items-center gap-3 rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm">
+          <XCircle className="h-5 w-5 shrink-0 text-destructive" />
+          <div>
+            <p className="font-medium">Already admitted</p>
+            <p className="text-muted-foreground">
+              {admittedAt
+                ? `Entered ${new Date(admittedAt).toLocaleTimeString()} — QR re-use detected.`
+                : "This invitee has already been admitted to the event."}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {ringState === "pending" && (
+        <Button onClick={handleAdmit} disabled={admitting} size="lg">
+          {admitting ? <Loader2 className="animate-spin" /> : <ShieldCheck />}
+          {admitting ? "Admitting…" : "Admit to Event"}
+        </Button>
+      )}
+
+      {(ringState === "just_admitted" || ringState === "already_admitted") && (
+        <Button
+          variant="ghost"
+          nativeButton={false}
+          render={
+            <Link href={`/admin/events/${eventId}`}>
+              <ArrowLeft /> Back to invitee list
+            </Link>
+          }
+        />
+      )}
+    </div>
+  );
+}
