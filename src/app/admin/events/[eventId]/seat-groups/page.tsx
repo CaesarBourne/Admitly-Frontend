@@ -20,6 +20,8 @@ export default async function SeatGroupsListPage({
 
   const event = await getEventAction(eventId);
   if (!event) redirect("/admin");
+  if (!event.groupingEnabled) redirect(`/admin/events/${eventId}`);
+  const label = event.groupLabel.toLowerCase();
 
   const [invitees, seatGroups] = await Promise.all([
     getInviteesAction(eventId),
@@ -51,14 +53,14 @@ export default async function SeatGroupsListPage({
           }
         />
         <span className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
-          Seat Groups — {event.name}
+          {event.groupLabel}s — {event.name}
         </span>
       </header>
 
       <main className="mx-auto flex max-w-2xl flex-col gap-4 p-6">
         {seatGroups.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            No seat groups yet — create one from the invitee list.
+            No {label}s yet — create one from the invitee list.
           </p>
         ) : (
           seatGroups.map((group) => {
@@ -111,7 +113,7 @@ export default async function SeatGroupsListPage({
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                Not in a seat group ({unassigned.length})
+                Not in a {label} ({unassigned.length})
               </CardTitle>
             </CardHeader>
             <CardContent>

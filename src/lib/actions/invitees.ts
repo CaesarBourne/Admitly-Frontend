@@ -72,7 +72,7 @@ export async function setSeatGroupAction(
     body: JSON.stringify({ seatGroupId }),
   });
   if (!res.ok) {
-    const err = await parseApiError(res, "Could not update seat group.");
+    const err = await parseApiError(res, "Could not update group.");
     return { error: err.message };
   }
   revalidatePath(`/admin/events/${eventId}`);

@@ -38,3 +38,21 @@ export async function createEventAction(
   revalidatePath("/admin");
   return {};
 }
+
+export async function updateEventGroupingAction(
+  eventId: string,
+  groupingEnabled: boolean,
+  groupLabel: string,
+): Promise<ActionState> {
+  const res = await apiFetch(`/events/${eventId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ groupingEnabled, groupLabel: groupLabel.trim() || null }),
+  });
+  if (!res.ok) {
+    const err = await parseApiError(res, "Could not update grouping settings.");
+    return { error: err.message };
+  }
+  revalidatePath(`/admin/events/${eventId}`);
+  return {};
+}

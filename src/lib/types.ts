@@ -16,6 +16,7 @@ export interface AuthUser {
   name?: string;
   seatNumber?: string | null;
   seatGroupName?: string | null;
+  groupLabel?: string;
   inactive?: boolean;
   admissionStatus?: AdmissionStatus;
 }
@@ -29,6 +30,7 @@ export interface InviteeInfo {
   admittedAt: string | null;
   seatNumber: string | null;
   seatGroupName: string | null;
+  groupLabel: string;
   avatarUrl: string | null;
 }
 
@@ -36,6 +38,10 @@ export interface EventDto {
   id: string;
   name: string;
   eventDate: string | null;
+  /** Grouping invitees is opt-in per event. */
+  groupingEnabled: boolean;
+  /** What this event calls a group ("Table", "Team"…); defaults to "Group". */
+  groupLabel: string;
   createdAt: string;
 }
 

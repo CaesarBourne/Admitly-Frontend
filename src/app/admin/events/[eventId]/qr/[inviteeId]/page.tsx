@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { QRValidateClient } from "@/components/admin/QRValidateClient";
+import { getEventAction } from "@/lib/actions/events";
 import { apiFetch } from "@/lib/api-server";
 import { requireAdmin } from "@/lib/auth";
 import type { InviteeDto } from "@/lib/types";
@@ -15,8 +16,8 @@ export default async function QrValidatePage({
   await requireAdmin();
   const { eventId, inviteeId } = await params;
 
-  const res = await apiFetch(`/invitees/${inviteeId}`);
-  if (!res.ok) redirect(`/admin/events/${eventId}`);
+  const [res, event] = await Promise.all([apiFetch(`/invitees/${inviteeId}`), getEventAction(eventId)]);
+  if (!res.ok || !event) redirect(`/admin/events/${eventId}`);
   const invitee = (await res.json()) as InviteeDto;
 
   return (
@@ -45,7 +46,8 @@ export default async function QrValidatePage({
           admissionStatus={invitee.admissionStatus}
           admittedAt={invitee.admittedAt}
           seatNumber={invitee.seatNumber}
-          seatGroupName={invitee.seatGroup?.name ?? null}
+          seatGroupName={event.groupingEnabled ? (invitee.seatGroup?.name ?? null) : null}
+          groupLabel={event.groupLabel}
         />
       </main>
     </div>

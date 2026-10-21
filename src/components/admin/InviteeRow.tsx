@@ -1,7 +1,15 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Camera, Loader2, MapPin, Trash2, Undo2, UserX, Users } from "lucide-react";
+import {
+  Camera,
+  Loader2,
+  MapPin,
+  Trash2,
+  Undo2,
+  UserX,
+  Users,
+} from "lucide-react";
 import { toast } from "sonner";
 import {
   deleteInviteeAction,
@@ -21,11 +29,14 @@ export function InviteeRow({
   eventId,
   invitee,
   seatGroups,
+  groupLabel,
   displayNumber,
 }: {
   readonly eventId: string;
   readonly invitee: InviteeDto;
-  readonly seatGroups: SeatGroupDto[];
+  /** Null when the event has grouping turned off — hides the group picker. */
+  readonly seatGroups: SeatGroupDto[] | null;
+  readonly groupLabel: string;
   readonly displayNumber: number;
 }) {
   const [deleting, setDeleting] = useState(false);
@@ -39,7 +50,11 @@ export function InviteeRow({
 
   async function handleSaveSeat() {
     setSavingSeat(true);
-    const result = await setSeatNumberAction(eventId, invitee.id, seatValue.trim() || null);
+    const result = await setSeatNumberAction(
+      eventId,
+      invitee.id,
+      seatValue.trim() || null,
+    );
     if (result.error) {
       toast.error(result.error);
     } else {
@@ -51,11 +66,15 @@ export function InviteeRow({
 
   async function handleSeatGroupChange(seatGroupId: string) {
     setSavingSeatGroup(true);
-    const result = await setSeatGroupAction(eventId, invitee.id, seatGroupId || null);
+    const result = await setSeatGroupAction(
+      eventId,
+      invitee.id,
+      seatGroupId || null,
+    );
     if (result.error) {
       toast.error(result.error);
     } else {
-      toast.success(`Seat group updated for ${invitee.name}.`);
+      toast.success(`${groupLabel} updated for ${invitee.name}.`);
     }
     setSavingSeatGroup(false);
   }
@@ -67,13 +86,22 @@ export function InviteeRow({
     if (result.error) {
       toast.error(result.error);
     } else {
-      toast.success(next ? `${invitee.name} marked inactive.` : `${invitee.name} moved back to the active list.`);
+      toast.success(
+        next
+          ? `${invitee.name} marked inactive.`
+          : `${invitee.name} moved back to the active list.`,
+      );
     }
     setTogglingInactive(false);
   }
 
   async function handleDelete() {
-    if (!confirm(`Remove invitee "${invitee.name}"? This will invalidate their QR code.`)) return;
+    if (
+      !confirm(
+        `Remove invitee "${invitee.name}"? This will invalidate their QR code.`,
+      )
+    )
+      return;
     setDeleting(true);
     const result = await deleteInviteeAction(eventId, invitee.id);
     if (result.error) {
@@ -91,7 +119,11 @@ export function InviteeRow({
     setUploadingPhoto(true);
     const formData = new FormData();
     formData.set("file", file);
-    const result = await uploadInviteeAvatarAction(eventId, invitee.id, formData);
+    const result = await uploadInviteeAvatarAction(
+      eventId,
+      invitee.id,
+      formData,
+    );
     if (result.error) {
       toast.error(result.error);
     } else {
@@ -166,37 +198,48 @@ export function InviteeRow({
               >
                 {savingSeat ? "Saving…" : "Save"}
               </button>
-              <button type="button" onClick={() => setEditingSeat(false)} className="text-xs hover:underline">
+              <button
+                type="button"
+                onClick={() => setEditingSeat(false)}
+                className="text-xs hover:underline"
+              >
                 Cancel
               </button>
             </>
           ) : (
-            <button type="button" onClick={() => setEditingSeat(true)} className="hover:underline">
+            <button
+              type="button"
+              onClick={() => setEditingSeat(true)}
+              className="hover:underline"
+            >
               {invitee.seatNumber ? `Seat ${invitee.seatNumber}` : "Set seat"}
             </button>
           )}
         </div>
 
-        <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-          <Users className="size-3.5 shrink-0" />
-          <select
-            value={invitee.seatGroup?.id ?? ""}
-            onChange={(e) => void handleSeatGroupChange(e.target.value)}
-            disabled={savingSeatGroup}
-            className="h-6 rounded-md border border-input bg-transparent px-1 text-xs outline-none disabled:opacity-50"
-          >
-            <option value="">No seat group</option>
-            {seatGroups.map((group) => {
-              const isCurrent = group.id === invitee.seatGroup?.id;
-              const isFull = group.guestCount >= group.maxSize && !isCurrent;
-              return (
-                <option key={group.id} value={group.id} disabled={isFull}>
-                  {group.name} ({group.guestCount}/{group.maxSize}){isFull ? " — full" : ""}
-                </option>
-              );
-            })}
-          </select>
-        </div>
+        {seatGroups && (
+          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+            <Users className="size-3.5 shrink-0" />
+            <select
+              value={invitee.seatGroup?.id ?? ""}
+              onChange={(e) => void handleSeatGroupChange(e.target.value)}
+              disabled={savingSeatGroup}
+              className="h-6 rounded-md border border-input bg-transparent px-1 text-xs outline-none disabled:opacity-50"
+            >
+              <option value="">No {groupLabel.toLowerCase()}</option>
+              {seatGroups.map((group) => {
+                const isCurrent = group.id === invitee.seatGroup?.id;
+                const isFull = group.guestCount >= group.maxSize && !isCurrent;
+                return (
+                  <option key={group.id} value={group.id} disabled={isFull}>
+                    {group.name} ({group.guestCount}/{group.maxSize})
+                    {isFull ? " — full" : ""}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+        )}
       </div>
 
       <QrCell token={invitee.inviteToken} />

@@ -4,6 +4,7 @@ import { ArrowLeft, QrCode, ScanLine, User, UserX, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CreateInviteeForm } from "@/components/admin/CreateInviteeForm";
+import { GroupingSettings } from "@/components/admin/GroupingSettings";
 import { InviteeRow } from "@/components/admin/InviteeRow";
 import { SeatGroupsPanel } from "@/components/admin/SeatGroupsPanel";
 import { getEventAction } from "@/lib/actions/events";
@@ -24,7 +25,7 @@ export default async function EventAdminPage({
 
   const [allInvitees, seatGroups] = await Promise.all([
     getInviteesAction(eventId),
-    getSeatGroupsAction(eventId),
+    event.groupingEnabled ? getSeatGroupsAction(eventId) : Promise.resolve(null),
   ]);
   const invitees = allInvitees.filter((i) => !i.inactive);
   const inactiveInvitees = allInvitees.filter((i) => i.inactive);
@@ -68,23 +69,33 @@ export default async function EventAdminPage({
           </CardContent>
         </Card>
 
-        {/* Seat groups */}
+        {/* Optional grouping — the event decides whether to group and what a group is called */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Users className="text-primary" /> Seat groups
+              <Users className="text-primary" />
+              {event.groupingEnabled ? `${event.groupLabel}s` : "Grouping"}
             </CardTitle>
-            <CardAction>
-              <Button
-                variant="ghost"
-                size="sm"
-                nativeButton={false}
-                render={<Link href={`/admin/events/${eventId}/seat-groups`}>View full list</Link>}
-              />
-            </CardAction>
+            {seatGroups && (
+              <CardAction>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  nativeButton={false}
+                  render={<Link href={`/admin/events/${eventId}/seat-groups`}>View full list</Link>}
+                />
+              </CardAction>
+            )}
           </CardHeader>
-          <CardContent>
-            <SeatGroupsPanel eventId={eventId} seatGroups={seatGroups} />
+          <CardContent className="flex flex-col gap-6">
+            <GroupingSettings
+              eventId={eventId}
+              groupingEnabled={event.groupingEnabled}
+              groupLabel={event.groupLabel}
+            />
+            {seatGroups && (
+              <SeatGroupsPanel eventId={eventId} seatGroups={seatGroups} groupLabel={event.groupLabel} />
+            )}
           </CardContent>
         </Card>
 
@@ -105,6 +116,7 @@ export default async function EventAdminPage({
                   eventId={eventId}
                   invitee={invitee}
                   seatGroups={seatGroups}
+                  groupLabel={event.groupLabel}
                   displayNumber={i + 1}
                 />
               ))
@@ -127,6 +139,7 @@ export default async function EventAdminPage({
                   eventId={eventId}
                   invitee={invitee}
                   seatGroups={seatGroups}
+                  groupLabel={event.groupLabel}
                   displayNumber={i + 1}
                 />
               ))}

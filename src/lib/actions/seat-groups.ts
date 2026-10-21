@@ -23,7 +23,7 @@ export async function createSeatGroupAction(
     body: JSON.stringify({ name, maxSize }),
   });
   if (!res.ok) {
-    const err = await parseApiError(res, "Could not create seat group.");
+    const err = await parseApiError(res, "Could not create group.");
     return { error: err.message };
   }
   revalidatePath(`/admin/events/${eventId}`);
@@ -33,7 +33,7 @@ export async function createSeatGroupAction(
 export async function deleteSeatGroupAction(eventId: string, id: string): Promise<ActionState> {
   const res = await apiFetch(`/seat-groups/${id}`, { method: "DELETE" });
   if (!res.ok) {
-    const err = await parseApiError(res, "Could not delete seat group.");
+    const err = await parseApiError(res, "Could not delete group.");
     return { error: err.message };
   }
   revalidatePath(`/admin/events/${eventId}`);

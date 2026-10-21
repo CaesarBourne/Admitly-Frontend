@@ -21,6 +21,7 @@ interface Props {
   admittedAt: string | null;
   seatNumber: string | null;
   seatGroupName: string | null;
+  groupLabel: string;
 }
 
 export function QRValidateClient({
@@ -32,6 +33,7 @@ export function QRValidateClient({
   admittedAt: initialAdmittedAt,
   seatNumber,
   seatGroupName,
+  groupLabel,
 }: Props) {
   const [ringState, setRingState] = useState<RingState>(
     admissionStatus === "admitted" ? "already_admitted" : "pending",
@@ -101,7 +103,7 @@ export function QRValidateClient({
             {seatGroupName && (
               <p className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
                 <Users className="size-4" />
-                Seat group: <span className="font-bold">{seatGroupName}</span>
+                {groupLabel}: <span className="font-bold">{seatGroupName}</span>
               </p>
             )}
           </div>

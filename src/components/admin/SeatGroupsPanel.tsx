@@ -14,10 +14,13 @@ const DEFAULT_MAX_SIZE = 8;
 export function SeatGroupsPanel({
   eventId,
   seatGroups,
+  groupLabel,
 }: {
   readonly eventId: string;
   readonly seatGroups: SeatGroupDto[];
+  readonly groupLabel: string;
 }) {
+  const label = groupLabel.toLowerCase();
   const [name, setName] = useState("");
   const [maxSize, setMaxSize] = useState(String(DEFAULT_MAX_SIZE));
   const [creating, setCreating] = useState(false);
@@ -32,7 +35,7 @@ export function SeatGroupsPanel({
     if (result.error) {
       toast.error(result.error);
     } else {
-      toast.success(`Seat group "${trimmed}" created.`);
+      toast.success(`${groupLabel} "${trimmed}" created.`);
       setName("");
       setMaxSize(String(DEFAULT_MAX_SIZE));
     }
@@ -40,7 +43,7 @@ export function SeatGroupsPanel({
   }
 
   async function handleDelete(group: SeatGroupDto) {
-    if (!confirm(`Delete seat group "${group.name}"? Invitees keep their seat number but lose this group.`)) return;
+    if (!confirm(`Delete ${label} "${group.name}"? Invitees keep their seat number but leave this ${label}.`)) return;
     setDeletingId(group.id);
     const result = await deleteSeatGroupAction(eventId, group.id);
     if (result.error) {
@@ -54,15 +57,15 @@ export function SeatGroupsPanel({
   return (
     <div className="flex flex-col gap-4">
       <p className="text-sm text-muted-foreground">
-        Group invitees under a shared seat name (e.g. &quot;VIP Table 3&quot;) — set how many
-        invitees each group holds.
+        Add as many {label}s as you need, name them anything, and set how many invitees each
+        one holds.
       </p>
 
       <div className="flex flex-wrap items-center gap-3">
         <Input
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="Seat group name"
+          placeholder={`${groupLabel} name`}
           maxLength={40}
           className="max-w-xs"
           onKeyDown={(e) => {
@@ -77,11 +80,11 @@ export function SeatGroupsPanel({
           max={1000}
           placeholder="Max"
           className="w-20"
-          title="Max invitees per group"
+          title={`Max invitees per ${label}`}
         />
         <Button type="button" onClick={() => void handleCreate()} disabled={creating || !name.trim()}>
           {creating ? <Loader2 className="animate-spin" /> : <Plus />}
-          {creating ? "Creating…" : "Add seat group"}
+          {creating ? "Creating…" : `Add ${label}`}
         </Button>
       </div>
 
@@ -100,7 +103,7 @@ export function SeatGroupsPanel({
                 size="icon"
                 onClick={() => void handleDelete(group)}
                 disabled={deletingId === group.id}
-                title="Delete seat group"
+                title={`Delete ${label}`}
               >
                 {deletingId === group.id ? <Loader2 className="animate-spin" /> : <Trash2 />}
               </Button>
